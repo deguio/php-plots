@@ -64,8 +64,8 @@ if( $_SERVER['QUERY_STRING'] ) {
 $folder = str_replace($_SERVER['DOCUMENT_ROOT'],"",
 		      str_replace("index.php","",$pruned_uri)
 	);
-$script_path = str_replace($_SERVER['DOCUMENT_ROOT'],"",dirname($_SERVER["SCRIPT_FILENAME"]));
-$target_folder = str_replace($script_path,getcwd(),$folder);
+$script_path = substr_replace(dirname($_SERVER["SCRIPT_FILENAME"]), $_SERVER['CONTEXT_PREFIX'], 0, strlen($_SERVER['CONTEXT_DOCUMENT_ROOT']));
+$target_folder = substr_replace($pruned_uri, $_SERVER['CONTEXT_DOCUMENT_ROOT'], 0, strlen($_SERVER['CONTEXT_PREFIX']));
 $script_path = str_replace("//","/","/".$script_path);
 chdir( $target_folder  )
 ?>
@@ -112,8 +112,8 @@ $(function() {
 $has_subs = false;
 $folders = array();
 $allfiles = glob("*");
-usort($allfiles, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
-foreach ($allfiles as $filename) {
+//usort($allfiles, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
+foreach (array_reverse($allfiles) as $filename) {
 	if (is_dir($filename)) {
 		$has_subs = true;
 		array_push( $folders, $filename);
@@ -130,7 +130,7 @@ if ($has_subs) {
     }
     print "</h2>\n";
     foreach ($folders as $filename) {
-	    print " <a href=\"$filename\">[$filename]</a>";
+	    print " <a href=\"$filename\">[$filename]</a><br/>";
     }
     print "</div>";
 }
