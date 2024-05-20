@@ -64,17 +64,18 @@ if( $_SERVER['QUERY_STRING'] ) {
 $folder = str_replace($_SERVER['DOCUMENT_ROOT'],"",
 		      str_replace("index.php","",$pruned_uri)
 	);
-$script_path = str_replace($_SERVER['DOCUMENT_ROOT'],"",dirname($_SERVER["SCRIPT_FILENAME"]));
-$target_folder = str_replace($script_path,getcwd(),$folder);
+$script_path = substr_replace(dirname($_SERVER["SCRIPT_FILENAME"]), $_SERVER['CONTEXT_PREFIX'], 0, strlen($_SERVER['CONTEXT_DOCUMENT_ROOT']));
+$target_folder = substr_replace($pruned_uri, $_SERVER['CONTEXT_DOCUMENT_ROOT'], 0, strlen($_SERVER['CONTEXT_PREFIX']));
 $script_path = str_replace("//","/","/".$script_path);
 chdir( $target_folder  )
 ?>
 
-<link rel="stylesheet" type="text/css" href="<?php echo $script_path."/res/theme.css"; ?>" />
-<link rel="stylesheet" type="text/css" href="<?php echo $script_path."/res/style.css"; ?>" />
-<script language="javascript" type="text/javascript" src="<?php echo $script_path."/res/jquery.js" ?>" ></script>
-<script language="javascript" type="text/javascript" src="<?php echo $script_path."/res/jquery-ui.js" ?>" ></script>
-<script language="javascript" type="text/javascript" src="<?php echo $script_path."/res/style.js" ?>" ></script>
+
+<link rel="stylesheet" type="text/css" href="<?php echo $script_path."res/theme.css"; ?>" />
+<link rel="stylesheet" type="text/css" href="<?php echo $script_path."res/style.css"; ?>" />
+<script language="javascript" type="text/javascript" src="<?php echo $script_path."res/jquery.js" ?>" ></script>
+<script language="javascript" type="text/javascript" src="<?php echo $script_path."res/jquery-ui.js" ?>" ></script>
+<script language="javascript" type="text/javascript" src="<?php echo $script_path."res/style.js" ?>" ></script>
 <script language="javascript" type="text/javascript">
 $(function() {
           $(".numbers-row").append('<span class="button">+</span>&nbsp;&nbsp;<span class="button">-</span>');
@@ -106,14 +107,14 @@ $(function() {
 </head>
 
 <body>
-<h1><?php echo substr($folder,1,-1)." on ".$_SERVER['SERVER_NAME'];  ?></h1>
+<h1><?php echo $_SERVER['SERVER_NAME'];  ?></h1>
 <?php print "<a href=\"../\">[parent]</a> "; ?>
 <?php
 $has_subs = false;
 $folders = array();
 $allfiles = glob("*");
-usort($allfiles, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
-foreach ($allfiles as $filename) {
+//usort($allfiles, create_function('$a,$b', 'return filemtime($b) - filemtime($a);'));
+foreach (array_reverse($allfiles) as $filename) {
 	if (is_dir($filename)) {
 		$has_subs = true;
 		array_push( $folders, $filename);
@@ -123,14 +124,14 @@ foreach ($allfiles as $filename) {
 if ($has_subs) {
     print "<div class=\"dirlinks\">\n";
     print "<h2>Subfolders\n";
-    if( ! $_GET['depth'] || intval($_GET['depth']<2) ) {
+    if( ! isset($_GET['depth']) || intval($_GET['depth']<2) ) {
 	    print " <a href=\"?".$_SERVER['QUERY_STRING']."&depth=2\">(show plots in subfolders)</a>\n";
     } else {
 	    print " <a href=\"?".$_SERVER['QUERY_STRING']."&depth=1\">(hide plots in subfolders)</a>\n";
     }
     print "</h2>\n";
     foreach ($folders as $filename) {
-	    print " <a href=\"$filename\">[$filename]</a>";
+	    print " <a href=\"$filename\">[$filename]</a><br/>";
     }
     print "</div>";
 }
@@ -169,7 +170,7 @@ if( $bookm != "" ) {
 </form></p>
 <div id="piccont">
 <?php
-$matchf = matchall;
+$matchf = 'matchall';
 $match = "";
 if( isset($_GET['match']) ) {
 	$match = $_GET['match'];
@@ -177,18 +178,18 @@ if( isset($_GET['match']) ) {
 		$matchf = preg_match;
 		$match = $match;
 	} else {
-		$matchf = fnmatch;
+		$matchf = 'fnmatch';
 		$match = '*'.$match.'*';
 	}
 }
 $displayed = array();
-if ($_GET['noplots']) {
+if (isset($_GET['noplots'])) {
     print "Plots will not be displayed.\n";
 } else {
 	$other_exts = array('.pdf', '.cxx', '.eps', '.ps', '.root', '.txt', ".C");
 	$main_exts = array('.png','.gif','.jpg','.jpeg');
 	$folders = array('*');
-	if( intval($_GET['depth'])>1 ) {
+	if( isset($_GET['depth']) && intval($_GET['depth'])>1 ) {
 		$wildc="*";
 		for( $de=2; $de<=intval($_GET['depth']); $de++ ){
 			$wildc = $wildc."/*";
@@ -269,7 +270,7 @@ if ($_GET['noplots']) {
 <ul>
 <?php
 foreach ($allfiles as $filename) {
-    if ($_GET['noplots'] || !in_array($filename, $displayed)) {
+    if (isset($_GET['noplots']) || !in_array($filename, $displayed)) {
 	    /// if (isset($_GET['match']) && !fnmatch('*'.$_GET['match'].'*', $filename)) continue;
 	    if( ! $matchf($match,$filename) ) { continue; }
 	    if( fnmatch("*_thumb.*", $filename) ) {
